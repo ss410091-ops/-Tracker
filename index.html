@@ -6,156 +6,255 @@
 <title>簡易 Tracker</title>
 <style>
   :root {
-    --bg: #f4f5f7; --panel: #fff; --text: #1d2330; --muted: #667085; --line: #e2e5ea;
-    --accent: #2563eb; --accent-soft: #e8efff; --danger: #dc2626; --ok: #16a34a;
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --muted: #86868b; --line: rgba(0,0,0,.08);
+    --fill: rgba(118,118,128,.12); --fill-hover: rgba(118,118,128,.2);
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.1); --danger: #ff3b30; --green: #34c759;
+    --radius: 14px; --shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 20px rgba(0,0,0,.05);
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
-         background: var(--bg); color: var(--text); font-size: 14px; }
-  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--panel);
-           border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-  header h1 { font-size: 18px; margin: 0 8px 0 0; }
-  #fname { color: var(--muted); }
-  button, .btn { font: inherit; padding: 6px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff;
-                 cursor: pointer; color: var(--text); display: inline-block; }
-  button:hover, .btn:hover { border-color: var(--accent); }
-  button.primary, .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
-  button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: bold; }
-  button.danger { color: var(--danger); }
-  button:disabled { opacity: .45; cursor: not-allowed; }
-  input[type=number], input[type=text] { font: inherit; width: 80px; padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; }
-  select { font: inherit; padding: 4px; border-radius: 6px; border: 1px solid var(--line); }
-  main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 12px; padding: 12px; }
-  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
-  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-  #stage { position: relative; background: #111; border-radius: 8px; overflow: hidden; min-height: 240px;
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column; overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang TC", "Microsoft JhengHei UI", "Microsoft JhengHei", system-ui, sans-serif;
+    background: var(--bg); color: var(--text); font-size: 13px; -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  input, select { font: inherit; color: var(--text); }
+
+  /* ---------- 工具列 ---------- */
+  .toolbar {
+    flex: none; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 16px;
+    background: rgba(255,255,255,.75); backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--line); position: relative; z-index: 2;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 15px; letter-spacing: -.01em; }
+  .logo { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
+          background: linear-gradient(135deg, #0a84ff, #5e5ce6); color: #fff; }
+  #fname { color: var(--muted); max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .spacer { flex: 1; }
+  .btn { border: 0; background: var(--fill); padding: 6px 14px; border-radius: 980px; cursor: pointer;
+         display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; transition: background .15s; }
+  .btn:hover { background: var(--fill-hover); }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: #0077ed; }
+  .btn.danger { color: var(--danger); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn:disabled { opacity: .35; cursor: default; }
+  .seg { display: inline-flex; background: var(--fill); border-radius: 9px; padding: 2px; gap: 2px; }
+  .seg button { border: 0; background: transparent; padding: 5px 16px; border-radius: 7px; cursor: pointer; white-space: nowrap; }
+  .seg button { min-width: 64px; }
+  .seg button.active { background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.14); font-weight: 600; }
+  #bTrack.active { color: var(--accent); }
+
+  /* ---------- 主版面：整個軟體在一個畫面 ---------- */
+  .app { flex: 1; min-height: 0; display: grid; gap: 12px; padding: 12px;
+         grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr) minmax(200px, 34%); }
+  .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .viewer { grid-column: 1; grid-row: 1; display: flex; flex-direction: column; padding: 10px; min-height: 0; }
+  .charts { grid-column: 1; grid-row: 2; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 0; }
+  .side { grid-column: 2; grid-row: 1 / 3; display: flex; flex-direction: column; min-height: 0; padding: 10px; }
+
+  #stage { position: relative; flex: 1; min-height: 0; background: #000; border-radius: 10px; overflow: hidden;
            display: flex; align-items: center; justify-content: center; }
-  #view { display: block; max-width: 100%; max-height: 70vh; cursor: crosshair; }
-  #drop { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #bbb; font-size: 16px; pointer-events: none; }
-  #mag { position: absolute; top: 8px; right: 8px; border: 2px solid #fff; border-radius: 6px; display: none; pointer-events: none; background: #000; }
-  #controls { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-  #slider { flex: 1; min-width: 150px; }
-  #frameInfo { font-variant-numeric: tabular-nums; color: var(--muted); min-width: 190px; }
-  #status { margin-top: 8px; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); color: #1e3a8a; min-height: 20px; }
-  #status.warn { background: #fef3c7; color: #92400e; }
-  aside .card { margin-bottom: 10px; }
-  aside h3 { margin: 0 0 8px; font-size: 15px; }
-  aside h3 .num { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff;
-                  text-align: center; line-height: 22px; font-size: 13px; margin-right: 6px; }
-  .row { display: flex; align-items: center; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
-  .row label { color: var(--muted); }
-  .hint { color: var(--muted); font-size: 12px; margin: 4px 0; line-height: 1.5; }
-  #bottom { padding: 0 12px 24px; display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
-  @media (max-width: 900px) { #bottom { grid-template-columns: 1fr; } }
-  .full { grid-column: 1 / -1; }
-  .chartbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-  .chartbar input { width: 60px; }
-  .chart canvas { width: 100%; height: 280px; display: block; border: 1px solid var(--line); border-radius: 8px; }
-  .eq { margin-top: 6px; font-family: Consolas, monospace; font-size: 13px; line-height: 1.6; }
-  .tablewrap { max-height: 360px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
-  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
-  th, td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  th { position: sticky; top: 0; background: #f8fafc; }
-  tr.cur td { background: #fff7d6; }
-  tbody tr { cursor: pointer; }
-  tbody tr:hover td { background: #f1f5ff; }
+  #view { display: block; cursor: crosshair; }
+  #drop { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px; align-items: center; justify-content: center;
+          color: rgba(255,255,255,.55); font-size: 15px; pointer-events: none; }
+  #drop small { font-size: 12px; color: rgba(255,255,255,.35); }
+  #mag { position: absolute; top: 10px; right: 10px; border-radius: 10px; display: none; pointer-events: none;
+         background: #000; box-shadow: 0 0 0 2px rgba(255,255,255,.85), 0 6px 20px rgba(0,0,0,.4); }
+  #status { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%); max-width: calc(100% - 24px);
+            padding: 6px 14px; border-radius: 980px; font-size: 12px; color: #fff; text-align: center;
+            background: rgba(29,29,31,.72); backdrop-filter: blur(12px); pointer-events: none; }
+  #status.warn { background: rgba(255,149,0,.95); }
+
+  #controls { display: flex; align-items: center; gap: 6px; padding-top: 10px; }
+  .icon { width: 30px; height: 30px; border: 0; border-radius: 50%; background: transparent; cursor: pointer;
+          display: grid; place-items: center; color: var(--text); }
+  .icon:hover { background: var(--fill); }
+  .icon svg { width: 16px; height: 16px; fill: currentColor; }
+  #slider { flex: 1; min-width: 80px; accent-color: var(--accent); }
+  #frameInfo { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12px; min-width: 150px; text-align: right; }
+
+  /* ---------- 圖表 ---------- */
+  .chart { display: flex; flex-direction: column; padding: 10px 12px; min-height: 0; min-width: 0; }
+  .chartbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; color: var(--muted); font-size: 12px; }
+  .chartbar select, .chartbar input { border: 0; background: var(--fill); border-radius: 6px; padding: 3px 6px; font-size: 12px; }
+  .chartbar input { width: 52px; }
+  .chartbar .png { margin-left: auto; }
+  .chart canvas { flex: 1 1 0; min-height: 0; min-width: 0; width: 100%; display: block; }
+  .eq { margin-top: 4px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 11px; line-height: 1.5; color: #3a3a3c; min-height: 16px; }
+
+  /* ---------- 側邊欄 ---------- */
+  .steps { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; margin-bottom: 4px; border-bottom: 1px solid var(--line); }
+  .step { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; border: 0; cursor: pointer;
+          background: #f5f5f7; border-radius: 12px; padding: 9px 12px; transition: background .15s, box-shadow .15s; }
+  .step:hover { background: #ebebf0; }
+  .step .n { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center;
+             background: #d2d2d7; color: #fff; font-weight: 600; font-size: 12px; }
+  .step .t { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .step .t b { font-size: 14px; font-weight: 600; }
+  .step .t small { color: var(--muted); font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step .ck { color: var(--green); font-weight: 700; font-size: 15px; }
+  .step.done .n { background: var(--green); }
+  .step.active { background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(0,113,227,.3); }
+  .step.active .n { background: #fff; color: var(--accent); }
+  .step.active .t small, .step.active .ck { color: rgba(255,255,255,.85); }
+  .runrow { display: flex; gap: 6px; }
+  .runrow .btn { flex: 1; justify-content: center; padding: 8px 10px; }
+  #bGo:not(:disabled) { background: var(--accent); color: #fff; }
+  #bStop:not(:disabled) { background: rgba(255,59,48,.12); color: var(--danger); }
+  .ptitle { font-size: 15px; font-weight: 600; margin: 10px 4px 2px; }
+  .panel { flex: 1; min-height: 0; overflow: auto; display: none; }
+  .panel.show { display: block; }
+  .gtitle { font-size: 11px; color: var(--muted); text-transform: uppercase; margin: 14px 6px 6px; letter-spacing: .02em; }
+  .gtitle:first-child { margin-top: 2px; }
+  .group { background: #f5f5f7; border-radius: 10px; }
+  .cell { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 6px 10px; position: relative; }
+  .cell + .cell::before { content: ""; position: absolute; top: 0; left: 10px; right: 0; border-top: 1px solid var(--line); }
+  .cell input[type=number] { width: 72px; border: 0; background: #fff; border-radius: 6px; padding: 4px 6px; text-align: right; }
+  .cell .unit { color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .cell.btns { justify-content: flex-start; flex-wrap: wrap; gap: 6px; padding: 8px 10px; }
+  .foot { color: var(--muted); font-size: 11.5px; line-height: 1.55; margin: 6px 6px 0; }
+  .foot b { font-weight: 600; }
+  #scaleInfo { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  input.switch { appearance: none; -webkit-appearance: none; width: 38px; height: 22px; border-radius: 11px; background: #e3e3e8;
+                 position: relative; cursor: pointer; transition: background .2s; margin: 0; flex: none; }
+  input.switch::before { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%;
+                         background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  input.switch:checked { background: var(--green); }
+  input.switch:checked::before { transform: translateX(16px); }
+
+  .tablewrap { border-radius: 10px; overflow: auto; background: #f5f5f7; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 12px; }
+  th, td { padding: 5px 8px; text-align: right; white-space: nowrap; }
+  th { position: sticky; top: 0; background: #ececf0; color: var(--muted); font-weight: 500; }
+  td { border-top: 1px solid var(--line); }
+  tr.cur td { background: rgba(255,204,0,.25); }
+  #tbody tr { cursor: pointer; }
+  #tbody tr:hover td { background: var(--accent-soft); }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .toolbar { height: auto; flex-wrap: wrap; padding: 8px 12px; }
+    .app { grid-template-columns: 1fr; grid-template-rows: 60vh auto auto; }
+    .viewer, .charts, .side { grid-column: 1; grid-row: auto; }
+    .charts { grid-template-columns: 1fr; }
+    .chart { height: 300px; }
+    .side { max-height: none; }
+    .panel { overflow: visible; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>📹 簡易 Tracker</h1>
+<header class="toolbar">
+  <div class="brand"><span class="logo"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><circle cx="7" cy="17" r="3"/><circle cx="12" cy="10" r="2.4" opacity=".75"/><circle cx="17" cy="5" r="1.8" opacity=".5"/></svg></span>簡易 Tracker</div>
   <label class="btn primary">開啟影片<input type="file" id="file" accept="video/*" hidden></label>
-  <span id="fname">尚未載入影片（也可以把影片拖曳到畫面上）</span>
+  <span id="fname">尚未載入影片</span>
+  <div class="spacer"></div>
+  <div class="seg" id="tabs">
+    <button data-tab="pSet" class="active">設定</button>
+    <button data-tab="pData">數據</button>
+    <button data-tab="pPeak">峰值</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn" id="bCopy" title="複製後到 Google 試算表按 Ctrl+V">複製數據</button>
+  <button class="btn" id="bCsv">匯出 CSV</button>
 </header>
 
-<main>
-  <section class="card">
+<div class="app">
+  <section class="card viewer">
     <div id="stage">
       <canvas id="view" width="640" height="360"></canvas>
-      <canvas id="mag" width="180" height="180"></canvas>
-      <div id="drop">請開啟或拖曳影片到這裡</div>
+      <canvas id="mag" width="160" height="160"></canvas>
+      <div id="drop">把影片拖曳到這裡，或按「開啟影片」<small>建議使用 Chrome 或 Edge</small></div>
+      <div id="status">① 開啟影片 → ② 比例尺 → ③ 原點 → ④ 追蹤</div>
     </div>
     <div id="controls">
-      <button id="bFirst" title="第一幀">⏮</button>
-      <button id="bPrev" title="上一步（←）">◀</button>
+      <button class="icon" id="bFirst" title="第一幀"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="icon" id="bPrev" title="上一步（←）"><svg viewBox="0 0 24 24"><path d="M16 5v14L5 12z"/></svg></button>
       <input type="range" id="slider" min="0" max="0" value="0">
-      <button id="bNext" title="下一步（→）">▶</button>
-      <button id="bLast" title="最後一幀">⏭</button>
+      <button class="icon" id="bNext" title="下一步（→）"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="icon" id="bLast" title="最後一幀"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
       <span id="frameInfo">幀 0 / 0</span>
     </div>
-    <div id="status">步驟：① 開啟影片 → ② 確認幀率 → ③ 設定比例尺 → ④ 設定原點 → ⑤ 追蹤物體 → ⑥ 看圖表 / 匯出資料</div>
   </section>
 
-  <aside>
-    <div class="card">
-      <h3><span class="num">2</span>影片幀率</h3>
-      <div class="row"><label>影片檔幀率</label><input type="number" id="fileFps" value="30" min="1" step="any"> fps
-        <button id="bDetect">自動偵測</button></div>
-      <div class="row"><label>實際拍攝幀率</label><input type="number" id="realFps" value="30" min="1" step="any"> fps</div>
-      <div class="row"><label>每步前進</label><input type="number" id="step" value="1" min="1" step="1"> 幀</div>
-      <p class="hint">一般影片兩者相同。若是「慢動作」影片（例如以 240 fps 拍攝、但存成 30 fps 播放），影片檔幀率填 30、實際拍攝幀率填 240，時間才會正確。</p>
+  <section class="charts">
+    <div class="card chart" id="chart1">
+      <div class="chartbar"><select class="var"></select>
+        <select class="fit"><option value="0">不擬合</option><option value="1">直線</option><option value="2">二次曲線</option></select>
+        t <input type="number" class="t0" placeholder="起" step="any">–<input type="number" class="t1" placeholder="迄" step="any">
+        <button class="btn small png" title="下載圖片">下載</button></div>
+      <canvas></canvas>
+      <div class="eq"></div>
+    </div>
+    <div class="card chart" id="chart2">
+      <div class="chartbar"><select class="var"></select>
+        <select class="fit"><option value="0">不擬合</option><option value="1">直線</option><option value="2">二次曲線</option></select>
+        t <input type="number" class="t0" placeholder="起" step="any">–<input type="number" class="t1" placeholder="迄" step="any">
+        <button class="btn small png" title="下載圖片">下載</button></div>
+      <canvas></canvas>
+      <div class="eq"></div>
+    </div>
+  </section>
+
+  <aside class="card side">
+    <div class="steps">
+      <button class="step" id="bCalib"><span class="n">1</span><span class="t"><b>比例尺</b><small id="stCalib">點已知長度物體的兩端</small></span><span class="ck" id="ckCalib"></span></button>
+      <button class="step" id="bOrigin"><span class="n">2</span><span class="t"><b>原點</b><small id="stOrigin">點一下設為 (0, 0)</small></span><span class="ck" id="ckOrigin"></span></button>
+      <button class="step" id="bTrack"><span class="n">3</span><span class="t"><b>追蹤</b><small id="stTrack">點物體中心開始追蹤</small></span><span class="ck" id="ckTrack"></span></button>
+      <div class="runrow"><button class="btn" id="bGo" disabled>▶ 開始自動追蹤</button><button class="btn" id="bStop" disabled>停止</button></div>
+    </div>
+    <div class="ptitle" id="ptitle">設定</div>
+
+    <div class="panel show" id="pSet">
+      <div class="gtitle">影片</div>
+      <div class="group">
+        <div class="cell"><span>影片檔幀率</span><span><button class="btn small" id="bDetect">偵測</button> <input type="number" id="fileFps" value="30" min="1" step="any"></span></div>
+        <div class="cell"><span>實際拍攝幀率</span><input type="number" id="realFps" value="30" min="1" step="any"></div>
+        <div class="cell"><span>每步前進幀數</span><input type="number" id="step" value="1" min="1" step="1"></div>
+      </div>
+      <p class="foot">慢動作影片：實際拍攝幀率填真正的拍攝幀率（例如 240）。</p>
+
+      <div class="gtitle">比例尺</div>
+      <div class="group">
+        <div class="cell"><span>兩點實際距離</span><span><input type="number" id="calLen" value="1" min="0" step="any"><span class="unit">m</span></span></div>
+        <div class="cell"><span id="scaleInfo">尚未設定（單位為 px）</span></div>
+      </div>
+
+      <div class="gtitle">追蹤</div>
+      <div class="group">
+        <div class="cell"><span>自動追蹤</span><input type="checkbox" class="switch" id="auto" checked></div>
+        <div class="cell"><span>每幀更新追蹤框</span><input type="checkbox" class="switch" id="updTpl" checked></div>
+        <div class="cell" title="用物體顏色找出真正的中心，避免追蹤點慢慢偏移；物體和背景顏色很像時會自動停用"><span>顏色重心校正</span><input type="checkbox" class="switch" id="colorFix" checked></div>
+        <div class="cell"><span>追蹤框</span><span><input type="number" id="tsize" value="31" min="7" step="2"><span class="unit">px</span></span></div>
+        <div class="cell"><span>搜尋範圍</span><span><input type="number" id="srange" value="60" min="5" step="5"><span class="unit">px</span></span></div>
+        <div class="cell"><span>最低相似度</span><input type="number" id="minScore" value="0.6" min="0" max="1" step="0.05"></div>
+      </div>
+      <p class="foot"><b style="color:#c99a00">黃框</b>＝追蹤框、<b style="color:#0891b2">藍虛線框</b>＝搜尋範圍。<br>調整大小：在影片上<b>滾動滑鼠滾輪</b>（按住 Shift ＝ 搜尋範圍），或在點選物體後拖曳框的<b>角落</b>。拖框中間可微調位置。<br><b>顏色重心校正</b>：用物體顏色找出真正中心，旋轉、模糊、背景改變時也準。</p>
+
+      <div class="gtitle">編輯</div>
+      <div class="group">
+        <div class="cell btns">
+          <button class="btn small" id="bDel">刪除本幀</button>
+          <button class="btn small" id="bDelAfter">刪除之後</button>
+          <button class="btn small danger" id="bClear">清除全部</button>
+        </div>
+      </div>
+      <p class="foot">追錯時：退回最後正確的幀 →「刪除之後」→ 在物體上點一下繼續。<br>快捷鍵：← → 換幀（Shift ×10）、Esc 停止。</p>
     </div>
 
-    <div class="card">
-      <h3><span class="num">3</span>比例尺</h3>
-      <div class="row"><button id="bCalib">點兩點設定比例尺</button></div>
-      <div class="row"><label>兩點實際距離</label><input type="number" id="calLen" value="1" min="0" step="any"> 公尺</div>
-      <div class="hint" id="scaleInfo">尚未設定（目前單位為像素 px）</div>
-      <p class="hint">在畫面中找一個已知長度的物體（例如直尺、米尺），點它的兩端。</p>
+    <div class="panel" id="pData">
+      <div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      <p class="foot">點任一列可跳到該幀。速度、加速度以中央差分計算。</p>
     </div>
 
-    <div class="card">
-      <h3><span class="num">4</span>座標原點</h3>
-      <div class="row"><button id="bOrigin">點一下設定原點</button></div>
-      <p class="hint">預設在畫面左下角。向右為 +x、向上為 +y。分析彈跳高度時建議把原點設在地面上。</p>
-    </div>
-
-    <div class="card">
-      <h3><span class="num">5</span>追蹤物體</h3>
-      <div class="row"><button id="bTrack" class="primary">開始追蹤</button><button id="bStop" disabled>停止</button></div>
-      <div class="row"><label><input type="checkbox" id="auto" checked> 自動追蹤（點一次物體，程式自動往後找）</label></div>
-      <div class="row"><label>追蹤框大小</label><input type="number" id="tsize" value="31" min="7" step="2"> px</div>
-      <div class="row"><label>搜尋範圍</label><input type="number" id="srange" value="60" min="5" step="5"> px</div>
-      <div class="row"><label>最低相似度</label><input type="number" id="minScore" value="0.6" min="0" max="1" step="0.05"></div>
-      <div class="row"><label><input type="checkbox" id="updTpl" checked> 每幀更新追蹤框</label></div>
-      <div class="row"><button id="bDel">刪除本幀的點</button><button id="bDelAfter">刪除本幀之後的點</button><button id="bClear" class="danger">清除全部</button></div>
-      <p class="hint">先移到物體開始運動的那一幀，按「開始追蹤」，再點物體中心。追蹤框要比物體稍大一點。若自動追蹤停下或追錯：退回最後一個正確的幀，按「刪除本幀之後的點」，再在物體上點一下就會繼續。關掉自動追蹤則每點一下前進一步（手動模式）。快捷鍵：← → 換幀（Shift 一次 10 步）、Esc 停止。</p>
+    <div class="panel" id="pPeak">
+      <p class="foot" style="margin-top:0">自動找出 y 的最高點（例如球每次彈起的高度）。請先把原點設在地面上。</p>
+      <div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>#</th><th>t (s)</th><th id="peakUnit">y</th><th>比值</th></tr></thead><tbody id="peaks"></tbody></table></div>
     </div>
   </aside>
-</main>
-
-<section id="bottom">
-  <div class="card chart" id="chart1">
-    <div class="chartbar">縱軸 <select class="var"></select>
-      擬合 <select class="fit"><option value="0">無</option><option value="1">直線</option><option value="2">二次曲線</option></select>
-      t 範圍 <input type="number" class="t0" placeholder="起" step="any"> ~ <input type="number" class="t1" placeholder="迄" step="any">
-      <button class="png">下載圖</button></div>
-    <canvas></canvas>
-    <div class="eq"></div>
-  </div>
-  <div class="card chart" id="chart2">
-    <div class="chartbar">縱軸 <select class="var"></select>
-      擬合 <select class="fit"><option value="0">無</option><option value="1">直線</option><option value="2">二次曲線</option></select>
-      t 範圍 <input type="number" class="t0" placeholder="起" step="any"> ~ <input type="number" class="t1" placeholder="迄" step="any">
-      <button class="png">下載圖</button></div>
-    <canvas></canvas>
-    <div class="eq"></div>
-  </div>
-
-  <div class="card full">
-    <div class="chartbar"><b>數據表</b>
-      <button id="bCsv" class="primary">下載 CSV（可匯入 Google 試算表）</button>
-      <button id="bCopy">複製表格（直接貼到試算表）</button>
-      <span class="hint">速度、加速度用前後兩點的中央差分計算；點列可跳到該幀。</span></div>
-    <div class="tablewrap"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
-  </div>
-
-  <div class="card full">
-    <b>峰值分析（例如：球每次彈起的最高點）</b>
-    <p class="hint">自動找出 y 的局部最高點，並計算每次高度是前一次的幾倍。請先把原點設在地面上，y 才代表離地高度。</p>
-    <div class="tablewrap"><table><thead><tr><th>第幾次</th><th>幀</th><th>t (s)</th><th id="peakUnit">高度 y</th><th>與前一次比值</th></tr></thead><tbody id="peaks"></tbody></table></div>
-  </div>
-</section>
+</div>
 
 <script>
 const $ = id => document.getElementById(id);
@@ -187,6 +286,7 @@ function loadFile(f) {
   video.onloadedmetadata = async () => {
     view.width = frameCanvas.width = video.videoWidth;
     view.height = frameCanvas.height = video.videoHeight;
+    fitView();
     S.loaded = true; S.pts.clear(); S.calib = null; S.origin = null; S.tpl = null; S.mode = 'none';
     $('drop').style.display = 'none';
     if (!isFinite(video.duration)) {   // 有些 WebM 沒寫長度，跳到最後讓瀏覽器算出來
@@ -195,7 +295,7 @@ function loadFile(f) {
     updateTotal();
     await seek(0);
     refreshData(); updateScaleInfo(); setModeButtons();
-    setStatus('影片已載入。請確認幀率（可按「自動偵測」），然後設定比例尺。');
+    setStatus('影片已載入。確認幀率後，按右邊「① 比例尺」。');
   };
   video.onerror = () => setStatus('這個影片格式瀏覽器無法播放，請轉成 MP4 (H.264) 再試。', true);
 }
@@ -212,6 +312,7 @@ function updateTotal() {
 let seeking = false, want = null, waiters = [];
 function clampF(f) { return Math.max(0, Math.min(S.total - 1, Math.round(f))); }
 function seek(f) {
+  if (!S.autoRunning && clampF(f) !== S.cur) S.ready = false;
   want = clampF(f); S.cur = want; updateInfo();
   return new Promise(r => { waiters.push(r); if (!seeking) pump(); });
 }
@@ -256,7 +357,8 @@ document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if (e.key === 'ArrowRight') { seek(S.cur + stepN() * (e.shiftKey ? 10 : 1)); e.preventDefault(); }
   if (e.key === 'ArrowLeft') { seek(S.cur - stepN() * (e.shiftKey ? 10 : 1)); e.preventDefault(); }
-  if (e.key === 'Escape') { S.autoRunning = false; S.mode = 'none'; S.calibTmp = null; setModeButtons(); render(); setStatus('已取消。'); }
+  if ((e.key === ' ' || e.key === 'Enter') && S.mode === 'track' && S.ready && !S.autoRunning) { startAuto(); e.preventDefault(); return; }
+  if (e.key === 'Escape') { S.autoRunning = false; S.ready = false; S.mode = 'none'; S.calibTmp = null; setModeButtons(); render(); setStatus('已取消。'); }
 });
 
 // ---------- 自動偵測幀率 ----------
@@ -336,11 +438,38 @@ function render() {
   ctx.fillStyle = '#ff3c3c';
   for (const f of fs) { const p = S.pts.get(f); ctx.beginPath(); ctx.arc(p.x, p.y, lw * 2, 0, 7); ctx.fill(); }
   const cp = S.pts.get(S.cur);
-  if (cp) {
-    ctx.strokeStyle = '#facc15'; ctx.beginPath(); ctx.arc(cp.x, cp.y, lw * 6, 0, 7); ctx.stroke();
-    if (S.mode === 'track') { const n = tsize(); ctx.strokeRect(cp.x - n / 2, cp.y - n / 2, n, n); }
+  if (cp) { ctx.strokeStyle = '#facc15'; ctx.beginPath(); ctx.arc(cp.x, cp.y, lw * 6, 0, 7); ctx.stroke(); }
+  // 追蹤框（黃）與搜尋範圍（藍虛線），可用滑鼠拉動
+  const c = boxCenter();
+  if (c) {
+    const th = tsize() / 2, sh = th + srange();
+    const hot = S.drag ? S.drag.kind : S.hot;
+    const box = (h, color, label, active, dash) => {
+      ctx.save();
+      ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = active ? lw * 2 : lw;
+      ctx.setLineDash(dash ? [lw * 4, lw * 3] : []);
+      ctx.strokeRect(c.x - h, c.y - h, 2 * h, 2 * h);
+      ctx.setLineDash([]);
+      const k = lw * 4;
+      if (canEditBox())   // 只有可拉動時才顯示角落把手
+        for (const [x, y] of [[-h, -h], [h, -h], [-h, h], [h, h]])
+          ctx.fillRect(c.x + x - k / 2, c.y + y - k / 2, k, k);
+      ctx.font = `${Math.round(lw * 7)}px sans-serif`;
+      ctx.fillText(label, c.x - h, c.y - h - lw * 3);
+      ctx.restore();
+    };
+    box(sh, '#22d3ee', `搜尋範圍 ±${srange()}px`, hot === 'search', true);
+    box(th, '#facc15', `追蹤框 ${tsize()}px`, hot === 'tpl', false);
   }
 }
+function boxCenter() {
+  if (!S.loaded || S.mode === 'calib1' || S.mode === 'calib2' || S.mode === 'origin') return null;
+  if (S.drag && S.drag.kind === 'move') return S.drag.c;
+  // 追蹤模式等你點物體時，框跟著滑鼠走（預覽點下去後的追蹤框），不會被拉動
+  if (S.mode === 'track' && !S.autoRunning && !S.ready && S.hover) return S.hover;
+  return S.pts.get(S.cur) || S.anchor || { x: view.width / 2, y: view.height / 2 };
+}
+const srange = () => Math.max(5, Math.round(num('srange') || 60));
 
 // 放大鏡
 view.addEventListener('mousemove', e => {
@@ -356,7 +485,82 @@ view.addEventListener('mousemove', e => {
   mctx.moveTo(0, mag.height / 2); mctx.lineTo(mag.width, mag.height / 2); mctx.stroke();
   mag.style.display = 'block';
 });
-view.addEventListener('mouseleave', () => { mag.style.display = 'none'; S.hover = null; });
+view.addEventListener('mouseleave', () => { mag.style.display = 'none'; S.hover = null; render(); });
+
+// ---------- 用滑鼠拉動追蹤框 / 搜尋範圍 ----------
+// 只有「沒在追蹤」時才能拉框；而且只抓四個角落的把手，不會誤觸
+function canEditBox() { return !S.autoRunning && (S.mode !== 'track' || S.ready); }
+function hitBox(p) {
+  if (!canEditBox()) return null;
+  const c = boxCenter(); if (!c) return null;
+  const r = view.getBoundingClientRect(), tol = 10 * view.width / r.width;
+  const ax = Math.abs(p.x - c.x), ay = Math.abs(p.y - c.y);
+  const th = tsize() / 2, sh = th + srange();
+  const corner = h => Math.abs(ax - h) < tol && Math.abs(ay - h) < tol;
+  if (corner(th)) return 'tpl';
+  if (corner(sh)) return 'search';
+  if (Math.max(ax, ay) < th) return 'move';
+  return null;
+}
+view.addEventListener('mousedown', e => {
+  if (!S.loaded || e.button !== 0) return;
+  const p = toVideo(e), kind = hitBox(p);
+  if (!kind) return;
+  const c = boxCenter();
+  S.drag = { kind, start: p, c0: { ...c }, c: { ...c }, sx: e.clientX, sy: e.clientY, moved: false };
+  e.preventDefault();
+});
+window.addEventListener('mousemove', e => {
+  if (!S.drag) {
+    if (e.target !== view || !S.loaded) return;
+    const p = toVideo(e), hot = hitBox(p);
+    if (hot !== S.hot || (S.mode === 'track' && !S.autoRunning && !S.ready)) { S.hot = hot; render(); }
+    const c = boxCenter();
+    view.style.cursor = !hot ? 'crosshair' : hot === 'move' ? 'move'
+      : (p.x - c.x) * (p.y - c.y) > 0 ? 'nwse-resize' : 'nesw-resize';
+    return;
+  }
+  const D = S.drag, p = toVideo(e);
+  if (Math.hypot(e.clientX - D.sx, e.clientY - D.sy) > 5) D.moved = true;
+  if (!D.moved) return;
+  const d = Math.max(Math.abs(p.x - D.c0.x), Math.abs(p.y - D.c0.y));
+  if (D.kind === 'tpl') {
+    let n = Math.max(7, Math.round(2 * d)); if (n % 2 === 0) n++;
+    $('tsize').value = n;
+  } else if (D.kind === 'search') {
+    $('srange').value = Math.max(5, Math.round(d - tsize() / 2));
+  } else {
+    D.c = { x: D.c0.x + p.x - D.start.x, y: D.c0.y + p.y - D.start.y };
+  }
+  render();
+});
+window.addEventListener('mouseup', () => {
+  const D = S.drag; if (!D) return;
+  S.drag = null;
+  if (!D.moved) { render(); return; }      // 沒有移動 → 當作一般點擊
+  S.justDragged = true;
+  if (D.kind === 'move') {
+    if (S.pts.has(S.cur)) {
+      S.pts.set(S.cur, D.c); S.anchor = D.c; refreshData();
+      setStatus(`已把第 ${S.cur} 幀的點移到新位置。`);
+    } else S.anchor = D.c;
+  } else {
+    setStatus(D.kind === 'tpl' ? `追蹤框大小改為 ${tsize()} px。` : `搜尋範圍改為 ±${srange()} px。`);
+  }
+  render();
+});
+$('tsize').addEventListener('input', () => render());
+// 滾輪：調整追蹤框；Shift + 滾輪：調整搜尋範圍
+view.addEventListener('wheel', e => {
+  if (!S.loaded || !boxCenter()) return;
+  e.preventDefault();
+  const dir = (e.deltaY || e.deltaX) < 0 ? 1 : -1;
+  if (e.shiftKey) $('srange').value = Math.max(5, srange() + dir * 5);
+  else $('tsize').value = Math.max(7, tsize() + dir * 4);
+  render();
+  setStatus(e.shiftKey ? `搜尋範圍 ±${srange()} px` : `追蹤框 ${tsize()} px`);
+}, { passive: false });
+$('srange').addEventListener('input', () => render());
 function toVideo(e) {
   const r = view.getBoundingClientRect();
   return { x: (e.clientX - r.left) * view.width / r.width, y: (e.clientY - r.top) * view.height / r.height };
@@ -367,17 +571,33 @@ function setModeButtons() {
   $('bCalib').classList.toggle('active', S.mode === 'calib1' || S.mode === 'calib2');
   $('bOrigin').classList.toggle('active', S.mode === 'origin');
   $('bTrack').classList.toggle('active', S.mode === 'track');
-  $('bTrack').textContent = S.mode === 'track' ? '追蹤中（點物體）' : '開始追蹤';
   $('bStop').disabled = !(S.mode === 'track' || S.autoRunning);
+  $('bGo').disabled = !(S.mode === 'track' && S.ready && !S.autoRunning);
+  $('bCalib').classList.toggle('done', !!S.calib); $('ckCalib').textContent = S.calib ? '✓' : '';
+  $('bOrigin').classList.toggle('done', !!S.origin); $('ckOrigin').textContent = S.origin ? '✓' : '';
+  $('bTrack').classList.toggle('done', S.pts.size > 0); $('ckTrack').textContent = S.pts.size ? '✓' : '';
+  $('stCalib').textContent = S.mode === 'calib1' ? '點第一個端點…' : S.mode === 'calib2' ? '點第二個端點…'
+    : S.calib ? `已設定，長度 ${num('calLen') > 0 ? num('calLen') + ' m' : '未填'}` : '點已知長度物體的兩端';
+  $('stOrigin').textContent = S.mode === 'origin' ? '在畫面上點一下…' : S.origin ? '已設定' : '點一下設為 (0, 0)';
+  $('stTrack').textContent = S.autoRunning ? '自動追蹤中…' : S.mode === 'track' ? (S.ready ? '調整框後按「開始」' : '在物體上點一下…')
+    : S.pts.size ? `已有 ${S.pts.size} 個點，可繼續追蹤` : '點物體中心開始追蹤';
 }
 $('bCalib').onclick = () => { if (!S.loaded) return; S.mode = 'calib1'; S.calibTmp = null; setModeButtons(); setStatus('請點比例尺（已知長度物體）的第一個端點。'); };
 $('bOrigin').onclick = () => { if (!S.loaded) return; S.mode = 'origin'; setModeButtons(); setStatus('請點一下要當作原點的位置。'); };
 $('bTrack').onclick = () => {
   if (!S.loaded) return;
-  S.mode = 'track'; setModeButtons();
-  setStatus($('auto').checked ? '請在物體中心點一下，程式會自動往後追蹤。' : '手動模式：每點一下物體記錄一點並前進一步。');
+  S.mode = 'track'; S.ready = false; setModeButtons(); render();
+  setStatus($('auto').checked ? '在物體上點一下選取它（可先用滾輪調整框大小）。' : '手動模式：每點一下物體記錄一點並前進一步。');
 };
-$('bStop').onclick = () => { S.autoRunning = false; S.mode = 'none'; setModeButtons(); render(); setStatus(`已停止，共 ${S.pts.size} 個資料點。`); };
+$('bGo').onclick = () => startAuto();
+function startAuto() {
+  const p = S.pts.get(S.cur);
+  if (!p) { setStatus('請先在物體上點一下。', true); return; }
+  captureTemplate(p);   // 用調整後的框大小重新取樣
+  S.ready = false;
+  autoTrack();
+}
+$('bStop').onclick = () => { S.autoRunning = false; S.ready = false; S.mode = 'none'; setModeButtons(); render(); setStatus(`已停止，共 ${S.pts.size} 個資料點。`); };
 $('bDel').onclick = () => {
   S.autoRunning = false; setModeButtons();
   if (!S.pts.delete(S.cur)) { setStatus(`第 ${S.cur} 幀沒有追蹤點可以刪除。`, true); return; }
@@ -386,7 +606,7 @@ $('bDel').onclick = () => {
 $('bDelAfter').onclick = () => {
   S.autoRunning = false; setModeButtons();
   let k = 0; for (const f of [...S.pts.keys()]) if (f > S.cur) { S.pts.delete(f); k++; }
-  render(); refreshData(); setStatus(`已刪除第 ${S.cur} 幀之後的 ${k} 個點。按「開始追蹤」並點物體即可從這裡繼續。`);
+  render(); refreshData(); setStatus(`已刪除第 ${S.cur} 幀之後的 ${k} 個點。按右邊「追蹤」並點物體即可從這裡繼續。`);
 };
 // 按兩次才清除（不用 confirm 對話框，避免在某些瀏覽器被擋掉）
 let clearArmed = null;
@@ -405,6 +625,7 @@ $('bClear').onclick = () => {
 
 view.addEventListener('click', async e => {
   if (!S.loaded) return;
+  if (S.justDragged) { S.justDragged = false; return; }
   const p = toVideo(e);
   if (S.mode === 'calib1') { S.calibTmp = { a: p }; S.mode = 'calib2'; setStatus('請點比例尺的第二個端點。'); }
   else if (S.mode === 'calib2') {
@@ -412,15 +633,18 @@ view.addEventListener('click', async e => {
     updateScaleInfo(); refreshData();
     setStatus('比例尺已設定，記得在右邊輸入它的實際長度（公尺）。接著設定原點。', !(num('calLen') > 0));
   }
-  else if (S.mode === 'origin') { S.origin = p; S.mode = 'none'; refreshData(); setStatus('原點已設定。接著移到物體開始運動的幀，按「開始追蹤」。'); }
+  else if (S.mode === 'origin') { S.origin = p; S.mode = 'none'; refreshData(); setStatus('原點已設定。接著移到物體開始運動的幀，按右邊「追蹤」。'); }
   else if (S.mode === 'track') {
     S.autoRunning = false;
     while (seeking) await new Promise(r => setTimeout(r, 10));
-    S.pts.set(S.cur, p);
-    captureTemplate(p);
+    const q = snapToObject(p);          // 自動對準物體顏色中心
+    S.pts.set(S.cur, q); S.anchor = q;
+    captureTemplate(q);
     render(); refreshData();
-    if ($('auto').checked) autoTrack();
-    else seek(S.cur + stepN());
+    if ($('auto').checked) {
+      S.ready = true;
+      setStatus('已選取。可用滾輪或拖曳角落調整黃框／藍框，拖中間微調位置，然後按「▶ 開始自動追蹤」或空白鍵。');
+    } else seek(S.cur + stepN());
   }
   setModeButtons(); render();
 });
@@ -443,12 +667,9 @@ function patchAt(p, n = tsize()) {
   }
   return { n, z: g, v2 };
 }
-function match(pred) {
-  const T = S.tpl, n = T.n, h = n >> 1, N = n * n;
-  const R = Math.max(2, Math.round(num('srange') || 60));
-  const x0 = Math.round(pred.x) - R - h, y0 = Math.round(pred.y) - R - h;
-  const W = 2 * R + n, H = 2 * R + n, W1 = W + 1;
-  const G = rgbRegion(x0, y0, W, H);
+// 在影像 G（W×H，三個通道）裡，用範本 T 比對左上角 (0..SZx-1, 0..SZy-1) 的每個位置
+function nccSearch(G, W, H, T, SZx, SZy) {
+  const n = T.n, N = n * n, W1 = W + 1;
   const I1 = [], I2 = [];
   for (let c = 0; c < 3; c++) {
     const a1 = new Float64Array(W1 * (H + 1)), a2 = new Float64Array(W1 * (H + 1)), g = G[c];
@@ -462,9 +683,9 @@ function match(pred) {
     }
     I1.push(a1); I2.push(a2);
   }
-  const SZ = 2 * R + 1, sc = new Float32Array(SZ * SZ).fill(-1);
-  let best = -2, bx = R, by = R;
-  for (let dy = 0; dy < SZ; dy++) for (let dx = 0; dx < SZ; dx++) {
+  const sc = new Float32Array(SZx * SZy).fill(-1);
+  let best = -2, bx = 0, by = 0;
+  for (let dy = 0; dy < SZy; dy++) for (let dx = 0; dx < SZx; dx++) {
     const a = dy * W1 + dx, b = a + n, cc = (dy + n) * W1 + dx, d = cc + n;
     let vI = 0, cr = 0;
     for (let c = 0; c < 3; c++) {
@@ -477,11 +698,45 @@ function match(pred) {
         for (let i = 0; i < n; i++) cr += g[row + i] * tz[tr + i];
       }
     }
-    if (vI < 1e-6) continue;
+    if (vI < 1e-6 || T.v2 < 1e-6) continue;
     const ncc = cr / Math.sqrt(vI * T.v2);
-    sc[dy * SZ + dx] = ncc;
+    sc[dy * SZx + dx] = ncc;
     if (ncc > best) { best = ncc; bx = dx; by = dy; }
   }
+  return { sc, best, bx, by };
+}
+// 縮小 f 倍（區塊平均），讓大追蹤框也能快速比對
+function shrink(G, W, H, f) {
+  const w = Math.floor(W / f), h = Math.floor(H / f), out = [];
+  for (const g of G) {
+    const o = new Float32Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let s = 0;
+      for (let j = 0; j < f; j++) for (let i = 0; i < f; i++) s += g[(y * f + j) * W + x * f + i];
+      o[y * w + x] = s / (f * f);
+    }
+    out.push(o);
+  }
+  return { G: out, w, h };
+}
+function match(pred) {
+  const T = S.tpl, n = T.n, h = n >> 1;
+  let R = Math.max(2, Math.round(num('srange') || 60));
+  let cx = Math.round(pred.x), cy = Math.round(pred.y);
+  const f = Math.max(1, Math.floor(n / 16));
+  if (f > 1) {
+    // 第一階段：縮小後粗略找
+    const x0 = cx - R - h, y0 = cy - R - h, W = 2 * R + n, H = 2 * R + n;
+    const D = shrink(rgbRegion(x0, y0, W, H), W, H, f);
+    const Td = shrink(T.z, n, n, f), nd = Td.w;
+    let v2 = 0;
+    for (const ch of Td.G) { let m = 0; for (const v of ch) m += v; m /= ch.length; for (let i = 0; i < ch.length; i++) { ch[i] -= m; v2 += ch[i] * ch[i]; } }
+    const r = nccSearch(D.G, D.w, D.h, { n: nd, z: Td.G, v2 }, D.w - nd + 1, D.h - nd + 1);
+    cx = x0 + r.bx * f + h; cy = y0 + r.by * f + h;
+    R = f + 1;   // 第二階段：原解析度在附近細找
+  }
+  const x0 = cx - R - h, y0 = cy - R - h, W = 2 * R + n, H = 2 * R + n, SZ = 2 * R + 1;
+  const { sc, best, bx, by } = nccSearch(rgbRegion(x0, y0, W, H), W, H, T, SZ, SZ);
   // 次像素修正（拋物線內插）
   const sub = (l, c, r) => { const den = l - 2 * c + r; return den < 0 ? Math.max(-0.5, Math.min(0.5, (l - r) / (2 * den))) : 0; };
   let ox = 0, oy = 0;
@@ -489,8 +744,104 @@ function match(pred) {
   if (by > 0 && by < SZ - 1) oy = sub(sc[(by - 1) * SZ + bx], best, sc[(by + 1) * SZ + bx]);
   return { x: x0 + h + bx + ox, y: y0 + h + by + oy, score: best };
 }
-// 使用者點選時：記下「原始追蹤框」tpl0，追丟時會拿它再找一次
-function captureTemplate(p) { S.tpl = patchAt(p); S.tpl0 = S.tpl; }
+// 使用者點選時：記下「原始追蹤框」tpl0（追丟時會拿它再找一次）與物體顏色
+function captureTemplate(p) { S.tpl = patchAt(p); S.tpl0 = S.tpl; S.color = colorModel(p); }
+
+// ---------- 顏色重心校正 ----------
+// 範本比對容易一點一點「滑」掉（尤其物體會旋轉、變形、模糊時）。
+// 這裡用物體本身的顏色，在追蹤框內找出屬於物體的像素，取它們的重心當作真正的中心。
+function boxPixels(p, n) {
+  const h = n >> 1, x0 = Math.round(p.x) - h, y0 = Math.round(p.y) - h;
+  return { d: fctx.getImageData(x0, y0, n, n).data, x0, y0, n };
+}
+// 取樣：從像素陣列中挑出最多 max 個顏色
+function sampleColors(d, n, pick, max) {
+  const all = [];
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) if (pick(i, j)) { const k = 4 * (j * n + i); all.push([d[k], d[k + 1], d[k + 2]]); }
+  const step = Math.max(1, Math.floor(all.length / max)), out = [];
+  for (let i = 0; i < all.length; i += step) out.push(all[i]);
+  return out;
+}
+// 離 list 中最近顏色的距離平方
+function nearest2(r, g, b, list) { let m = 1e9; for (const c of list) { const v = (r - c[0]) ** 2 + (g - c[1]) ** 2 + (b - c[2]) ** 2; if (v < m) m = v; } return m; }
+// 背景樣本中，去掉「看起來像物體」的顏色（例如物體剛好碰到框邊、或動態模糊混色）
+function cleanBg(bgs, M) {
+  const lim = (M.sep * 0.5) ** 2, out = bgs.filter(c => nearest2(c[0], c[1], c[2], M.objs) > lim);
+  return out.length ? out : bgs;
+}
+const mean3 = a => { const m = [0, 0, 0]; for (const c of a) { m[0] += c[0]; m[1] += c[1]; m[2] += c[2]; } return m.map(v => v / a.length); };
+// 物體顏色：點選位置中心附近的顏色樣本
+function colorModel(p) {
+  const n = tsize(), h = n >> 1, { d } = boxPixels(p, n);
+  const rc = Math.max(2, Math.round(n / 8));
+  const objs = sampleColors(d, n, (i, j) => Math.abs(i - h) <= rc && Math.abs(j - h) <= rc, 16);
+  const ring = sampleColors(d, n, (i, j) => i < 2 || j < 2 || i >= n - 2 || j >= n - 2, 64);
+  const mo = mean3(objs), mb = mean3(ring);
+  const sep = Math.hypot(mo[0] - mb[0], mo[1] - mb[1], mo[2] - mb[2]);
+  if (sep < 35) return null;   // 物體和背景太像
+  const M = { objs, sep, ref: 0 };
+  const c = colorCentroid(p, M, n);
+  if (!c) return null;
+  M.ref = c.count;
+  return M;
+}
+// 把框內每個像素分成「物體」或「背景」：比較它離物體顏色近，還是離框邊緣（當下背景）的顏色近
+function colorCentroid(p, M, n) {
+  const { d, x0, y0 } = boxPixels(p, n);
+  const bgs = cleanBg(sampleColors(d, n, (i, j) => i < 2 || j < 2 || i >= n - 2 || j >= n - 2, 64), M);
+  const near = nearest2;
+  let sx = 0, sy = 0, cnt = 0;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    const k = 4 * (j * n + i), r = d[k], g = d[k + 1], b = d[k + 2];
+    if (near(r, g, b, M.objs) < near(r, g, b, bgs)) { sx += i; sy += j; cnt++; }
+  }
+  if (cnt < 6) return null;
+  return { x: x0 + sx / cnt + 0.5, y: y0 + sy / cnt + 0.5, count: cnt };
+}
+// 以重心為中心反覆修正（mean-shift），收斂到物體中心
+function refineByColor(p, M) {
+  if (!M || !$('colorFix').checked) return null;
+  const n = tsize(); let q = p;
+  for (let it = 0; it < 8; it++) {
+    const c = colorCentroid(q, M, n);
+    if (!c) return null;
+    if (M.ref && (c.count < M.ref * 0.25 || c.count > M.ref * 3)) return null;   // 被遮住或混到背景
+    const moved = Math.hypot(c.x - q.x, c.y - q.y);
+    q = c;
+    if (moved < 0.2) break;
+  }
+  return q;
+}
+// 用顏色在整個搜尋範圍內找物體（外觀比對失敗時的備援，例如背景突然改變）
+function colorSearch(pred, M) {
+  if (!M || !$('colorFix').checked) return null;
+  const n = tsize(), h = n >> 1, R = srange(), W = 2 * R + n;
+  const x0 = Math.round(pred.x) - R - h, y0 = Math.round(pred.y) - R - h;
+  const d = fctx.getImageData(x0, y0, W, W).data;
+  const bgs = cleanBg(sampleColors(d, W, (i, j) => i < 2 || j < 2 || i >= W - 2 || j >= W - 2, 96), M);
+  const near = nearest2;
+  const W1 = W + 1, I = new Int32Array(W1 * W1);
+  for (let j = 0; j < W; j++) {
+    let row = 0;
+    for (let i = 0; i < W; i++) {
+      const k = 4 * (j * W + i), r = d[k], g = d[k + 1], b = d[k + 2];
+      if (near(r, g, b, M.objs) < near(r, g, b, bgs)) row++;
+      I[(j + 1) * W1 + i + 1] = I[j * W1 + i + 1] + row;
+    }
+  }
+  let best = 0, bx = 0, by = 0;
+  for (let y = 0; y + n <= W; y++) for (let x = 0; x + n <= W; x++) {
+    const c = I[(y + n) * W1 + x + n] - I[y * W1 + x + n] - I[(y + n) * W1 + x] + I[y * W1 + x];
+    if (c > best) { best = c; bx = x; by = y; }
+  }
+  if (best < M.ref * 0.4) return null;
+  return refineByColor({ x: x0 + bx + h, y: y0 + by + h }, M);
+}
+function snapToObject(p) {
+  const M = colorModel(p);
+  const q = refineByColor(p, M);
+  return q && Math.hypot(q.x - p.x, q.y - p.y) < tsize() / 2 ? { x: q.x, y: q.y } : p;
+}
 
 async function autoTrack() {
   if (!S.tpl) return;
@@ -521,6 +872,14 @@ async function autoTrack() {
       const m3 = match(pred);
       if (m3.score > m.score) m = m3; else S.tpl = cur;
     }
+    // 用顏色檢查比對結果；不像物體（或外觀比對失敗）就改用顏色在搜尋範圍內找
+    if (S.color && $('colorFix').checked) {
+      const cc = m.score >= minS ? colorCentroid(m, S.color, tsize()) : null;
+      if (!cc || cc.count < S.color.ref * 0.4) {
+        const cs = colorSearch(pred, S.color);
+        if (cs) m = { x: cs.x, y: cs.y, score: Math.max(m.score, minS) };
+      }
+    }
     if (m.score < minS) {
       msg = `第 ${next} 幀找不到物體（相似度 ${m.score.toFixed(2)}）。若物體還在畫面中，請點它一下繼續；若已離開，按「停止」。`;
       break;
@@ -531,6 +890,8 @@ async function autoTrack() {
       msg = `第 ${next} 幀位置突然跳很遠，可能追錯了，已暫停。請在物體上點一下繼續。`;
       break;
     }
+    const rf = refineByColor(m, S.color);
+    if (rf && Math.hypot(rf.x - m.x, rf.y - m.y) < tsize() / 2) m = { x: rf.x, y: rf.y, score: m.score };
     S.pts.set(next, { x: m.x, y: m.y });
     if ($('updTpl').checked) S.tpl = patchAt(m, S.tpl.n);
     render();
@@ -541,6 +902,7 @@ async function autoTrack() {
   const stoppedByUser = !S.autoRunning && !msg;
   S.autoRunning = false; setModeButtons(); refreshData();
   if (!stoppedByUser) setStatus(msg + `（目前共 ${S.pts.size} 點）`, !msg.startsWith('已追蹤到'));
+  render();
 }
 
 // ---------- 數據計算 ----------
@@ -572,15 +934,20 @@ function refreshData() {
   drawChart($('chart1')); drawChart($('chart2'));
   peaks();
   updateInfo();
+  setModeButtons();
 }
-function highlightRow() {
-  for (const tr of $('tbody').children) tr.classList.toggle('cur', +tr.dataset.f === S.cur);
+function highlightRow(scroll) {
+  for (const tr of $('tbody').children) {
+    const on = +tr.dataset.f === S.cur;
+    tr.classList.toggle('cur', on);
+    if (on && scroll) tr.scrollIntoView({ block: 'nearest' });
+  }
 }
 $('tbody').onclick = e => { const tr = e.target.closest('tr'); if (tr) seek(+tr.dataset.f); };
 
 // ---------- 峰值分析 ----------
 function peaks() {
-  $('peakUnit').textContent = `高度 y (${unit()})`;
+  $('peakUnit').textContent = `y (${unit()})`;
   const ys = DATA.map(r => r.y), k = 3, out = [];
   for (let i = k; i < ys.length - k; i++) {
     let isMax = true;
@@ -592,8 +959,8 @@ function peaks() {
     }
   }
   $('peaks').innerHTML = out.length ? out.map((r, i) =>
-    `<tr><td>${i + 1}</td><td>${r.f}</td><td>${fmt(r.t)}</td><td>${fmt(r.y)}</td><td>${i ? fmt(r.y / out[i - 1].y, 3) : ''}</td></tr>`).join('')
-    : '<tr><td colspan="5" style="text-align:center;color:#888">沒有找到明顯的最高點</td></tr>';
+    `<tr data-f="${r.f}"><td>${i + 1}</td><td>${fmt(r.t, 3)}</td><td>${fmt(r.y)}</td><td>${i ? fmt(r.y / out[i - 1].y, 3) : ''}</td></tr>`).join('')
+    : '<tr><td colspan="4" style="text-align:center;color:#86868b">沒有找到明顯的最高點</td></tr>';
 }
 
 // ---------- 圖表 ----------
@@ -654,7 +1021,7 @@ function drawChart(box) {
   const t0in = parseFloat(box.querySelector('.t0').value), t1in = parseFloat(box.querySelector('.t1').value);
   const lo = isFinite(t0in) ? t0in : -Infinity, hi = isFinite(t1in) ? t1in : Infinity;
   const inR = pts.filter(r => r.t >= lo && r.t <= hi);
-  c.fillStyle = '#2563eb';
+  c.fillStyle = '#0071e3';
   for (const r of pts) { c.globalAlpha = r.t >= lo && r.t <= hi ? 1 : 0.3; c.beginPath(); c.arc(X(r.t), Y(r[key]), 3, 0, 7); c.fill(); }
   c.globalAlpha = 1;
   eq.innerHTML = '';
@@ -662,7 +1029,7 @@ function drawChart(box) {
     const fit = polyfit(inR.map(r => r.t), inR.map(r => r[key]), deg);
     if (fit) {
       const a = Math.max(x0, inR[0].t), b = Math.min(x1, inR[inR.length - 1].t);
-      c.strokeStyle = '#f97316'; c.lineWidth = 2; c.beginPath();
+      c.strokeStyle = '#ff9500'; c.lineWidth = 2; c.beginPath();
       for (let i = 0; i <= 100; i++) { const t = a + (b - a) * i / 100; const yv = fit.f(t); i ? c.lineTo(X(t), Y(yv)) : c.moveTo(X(t), Y(yv)); }
       c.stroke();
       const [C0, C1, C2] = fit.c, u = unitOf(key);
@@ -688,7 +1055,23 @@ function setupChart(box, def, defFit) {
 }
 setupChart($('chart1'), 'y', 2);
 setupChart($('chart2'), 'vy', 1);
-window.addEventListener('resize', () => { drawChart($('chart1')); drawChart($('chart2')); });
+// ---------- 版面：影片縮放到剛好塞滿、圖表跟著容器重畫、側邊分頁 ----------
+function fitView() {
+  const st = $('stage'), W = st.clientWidth, H = st.clientHeight;
+  if (!W || !H) return;
+  const k = Math.min(W / view.width, H / view.height);
+  view.style.width = Math.floor(view.width * k) + 'px';
+  view.style.height = Math.floor(view.height * k) + 'px';
+}
+new ResizeObserver(fitView).observe($('stage'));
+for (const id of ['chart1', 'chart2']) new ResizeObserver(() => drawChart($(id))).observe($(id).querySelector('canvas'));
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('active', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('show', p.id === b.dataset.tab));
+  $('ptitle').textContent = b.textContent;
+  if (b.dataset.tab === 'pData') highlightRow(true);
+});
+$('peaks').onclick = e => { const tr = e.target.closest('tr[data-f]'); if (tr) seek(+tr.dataset.f); };
 
 // ---------- 匯出 ----------
 function tableRows() {
